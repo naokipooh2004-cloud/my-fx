@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FX Agent">
+<title>FX AIエージェント</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080b10;--bg2:#0f1318;--bg3:#161c24;--bg4:#1d2530;--bd:rgba(255,255,255,0.07);--bd2:rgba(255,255,255,0.13);--tx:#dde2ec;--tx2:#7a8394;--tx3:#404855;--green:#00dfa2;--gd:rgba(0,223,162,0.12);--red:#ff4d6a;--rd:rgba(255,77,106,0.12);--blue:#4d9eff;--bld:rgba(77,158,255,0.12);--pu:#9d7ff0;--pud:rgba(157,127,240,0.12);--gold:#f0b429}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--tx);font-family:'Noto Sans JP',sans-serif;min-height:100dvh;display:flex;flex-direction:column;max-width:680px;margin:0 auto}
+header{background:var(--bg2);border-bottom:1px solid var(--bd);padding:12px 16px;position:sticky;top:0;z-index:100}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.agent-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#9d7ff0,#4d9eff);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.agent-name{font-size:14px;font-weight:700}
+.agent-status{font-size:11px;color:var(--green);display:flex;align-items:center;gap:4px}
+.status-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+.data-badge{background:var(--gd);border:1px solid rgba(0,223,162,0.2);border-radius:20px;padding:3px 10px;font-size:11px;color:var(--green);display:none}
+.hdr-btn{background:var(--bg3);border:1px solid var(--bd2);border-radius:8px;color:var(--tx2);font-size:12px;padding:5px 10px;cursor:pointer;font-family:inherit}
+.tabs{display:flex;gap:6px}
+.tab{padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:1px solid var(--bd);background:transparent;color:var(--tx2);font-family:inherit;transition:all .15s}
+.tab.active{background:var(--pud);border-color:rgba(157,127,240,0.4);color:var(--pu)}
+.content{flex:1;overflow-y:auto;padding:16px 16px 0;display:none}
+.content.active{display:block}
+#chat-content{display:none;flex-direction:column;flex:1}
+#chat-content.active{display:flex}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:16px}
+.quick-btn{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:9px 10px;cursor:pointer;text-align:left;color:var(--tx2);font-size:12px;font-family:inherit;display:flex;align-items:center;gap:7px;line-height:1.3}
+.quick-btn:active{background:var(--bg3)}
+.msgs{flex:1;overflow-y:auto;padding:0 16px}
+.msg-wrap{margin-bottom:14px;display:flex;flex-direction:column}
+.msg-wrap.user{align-items:flex-end}
+.msg-wrap.assistant{align-items:flex-start}
+.msg-avatar{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,#9d7ff0,#4d9eff);display:flex;align-items:center;justify-content:center;font-size:13px;margin-bottom:4px}
+.msg-bubble{max-width:85%;padding:10px 14px;font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.msg-bubble.user{border-radius:14px 14px 4px 14px;background:linear-gradient(135deg,#9d7ff0,#4d9eff);color:#fff}
+.msg-bubble.assistant{border-radius:14px 14px 14px 4px;background:var(--bg3);color:var(--tx)}
+.msg-time{font-size:10px;color:var(--tx3);margin-top:3px}
+.typing{background:var(--bg3);border-radius:14px 14px 14px 4px;padding:12px 16px;display:none;gap:5px;align-items:center}
+.typing.show{display:flex}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--pu);animation:pulse 1.2s infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+.input-area{padding:14px 16px;background:var(--bg2);border-top:1px solid var(--bd);position:sticky;bottom:0}
+.input-row{display:flex;gap:10px;align-items:flex-end}
+.input-box{flex:1;background:var(--bg3);border:1px solid var(--bd2);border-radius:8px;padding:10px 12px;font-size:15px;color:var(--tx);font-family:inherit;outline:none;resize:none;max-height:120px;line-height:1.5}
+.send-btn{width:44px;height:44px;border-radius:10px;border:none;background:linear-gradient(135deg,#9d7ff0,#4d9eff);color:#fff;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.send-btn:disabled{background:rgba(255,255,255,0.05);color:var(--tx3);cursor:default}
+.card{background:var(--bg2);border:1px solid var(--bd);border-radius:10px;padding:14px;margin-bottom:10px}
+.card-title{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tx3);margin-bottom:10px}
+.news-badge{font-size:10px;padding:2px 8px;border-radius:10px}
+.news-up{background:var(--gd);color:var(--green)}
+.news-down{background:var(--rd);color:var(--red)}
+.news-neutral{background:var(--bg3);color:var(--tx2)}
+.pattern-bar{width:4px;border-radius:2px;flex-shrink:0}
+.deep-btn{padding:5px 12px;border-radius:6px;border:1px solid var(--bd2);background:transparent;color:var(--pu);font-size:12px;cursor:pointer;font-family:inherit;margin-top:10px}
+.skel{background:var(--bg3);border-radius:4px;animation:shimmer 1.5s infinite}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:300;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--bg2);border:1px solid var(--bd2);border-radius:14px;padding:20px;width:100%;max-width:380px}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:6px}
+.modal-desc{font-size:12px;color:var(--tx2);margin-bottom:14px;line-height:1.7}
+.modal-inp{background:var(--bg3);border:1px solid var(--bd2);border-radius:8px;padding:10px 12px;font-size:13px;color:var(--tx);font-family:monospace;outline:none;width:100%;height:80px;resize:vertical}
+.modal-btns{display:flex;gap:8px;margin-top:10px}
+.btn-cancel{flex:1;padding:11px;border-radius:8px;border:1px solid var(--bd2);background:transparent;color:var(--tx2);cursor:pointer;font-size:14px;font-family:inherit}
+.btn-ok{flex:1;padding:11px;border-radius:8px;border:none;background:var(--green);color:#000;cursor:pointer;font-size:14px;font-weight:700;font-family:inherit}
+.btn-file{width:100%;padding:12px;border-radius:8px;border:1px solid var(--bd2);background:var(--bg3);color:var(--tx);cursor:pointer;font-size:14px;margin-bottom:10px;font-family:inherit}
+.news-refresh{background:var(--bg3);border:1px solid var(--bd2);border-radius:8px;color:var(--tx2);font-size:12px;padding:5px 12px;cursor:pointer;font-family:inherit}
+.news-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.news-empty{text-align:center;padding:40px;color:var(--tx3)}
+.news-empty-icon{font-size:32px;margin-bottom:10px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes pulse{0%,80%,100%{opacity:.2}40%{opacity:1}}
+@keyframes shimmer{0%,100%{opacity:.5}50%{opacity:1}}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hdr-top">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="agent-icon">🤖</div>
+      <div>
+        <div class="agent-name">FX AIエージェント</div>
+        <div class="agent-status"><div class="status-dot"></div>オンライン</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <div class="data-badge" id="data-badge"></div>
+      <button class="hdr-btn" onclick="showImport()">📂 データ連携</button>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('chat',this)">💬 チャット</button>
+    <button class="tab" onclick="switchTab('news',this)">📰 ニュース</button>
+    <button class="tab" onclick="switchTab('patterns',this)">📚 パターン辞典</button>
+  </div>
+</header>
+
+<!-- チャット -->
+<div id="chat-content" class="active">
+  <div class="msgs" id="msgs">
+    <div style="margin-bottom:12px">
+      <div style="font-size:10px;color:var(--tx3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">クイック質問</div>
+      <div class="quick-grid">
+        <button class="quick-btn" onclick="sendQuick('今のAUD/JPY（豪ドル円）の相場状況と注目ポイントを教えて')"><span style="font-size:16px">📈</span><span>今のAUD/JPY状況は？</span></button>
+        <button class="quick-btn" onclick="sendQuick('USD/JPY（ドル円）の直近の見通しとリスク要因を教えて')"><span style="font-size:16px">📊</span><span>ドル円の見通し</span></button>
+        <button class="quick-btn" onclick="sendQuick('今週の主要な経済指標の発表予定と、AUD/JPYとUSD/JPYへの影響を教えて')"><span style="font-size:16px">📅</span><span>今週の経済指標</span></button>
+        <button class="quick-btn" onclick="sendQuick('FXで重要なチャートパターンをわかりやすく教えて。特にトレンド転換のサインを知りたい')"><span style="font-size:16px">📚</span><span>チャートパターン学習</span></button>
+        <button class="quick-btn" onclick="sendQuick('FXトレードでのリスク管理の基本と、SBI証券で使えるリスク管理ツールを教えて')"><span style="font-size:16px">🛡️</span><span>リスク管理を教えて</span></button>
+        <button class="quick-btn" onclick="sendQuick('AUD/JPYでのエントリータイミングの見極め方を教えて。どんなサインを見ればいい？')"><span style="font-size:16px">🎯</span><span>エントリーのコツ</span></button>
+      </div>
+    </div>
+    <div id="msg-list"></div>
+    <div style="display:flex;flex-direction:column;align-items:flex-start;margin-bottom:14px" id="typing-wrap">
+      <div style="width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,#9d7ff0,#4d9eff);display:flex;align-items:center;justify-content:center;font-size:13px;margin-bottom:4px">🤖</div>
+      <div class="typing" id="typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>
+    </div>
+    <div id="bottom"></div>
+  </div>
+  <div class="input-area">
+    <div class="input-row">
+      <textarea class="input-box" id="input-box" rows="1" placeholder="質問を入力... (Enterで送信)" oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="send()" disabled>↑</button>
+    </div>
+  </div>
+</div>
+
+<!-- ニュース -->
+<div id="news-content" class="content">
+  <div class="news-header">
+    <div style="font-size:13px;color:var(--tx2)">AUD/JPY・USD/JPY関連の最新情報</div>
+    <button class="news-refresh" onclick="fetchNews()">🔄 更新</button>
+  </div>
+  <div id="news-list">
+    <div class="news-empty"><div class="news-empty-icon">📰</div><div>「更新」ボタンでニュースを取得します</div></div>
+  </div>
+</div>
+
+<!-- パターン辞典 -->
+<div id="patterns-content" class="content">
+  <div class="card" style="background:var(--bg2);margin-bottom:12px">
+    <div style="font-size:12px;color:var(--tx2);line-height:1.7">📚 FXで重要なチャートパターンをまとめました。「AIに詳しく聞く」で深掘りできます。</div>
+  </div>
+  <div id="pattern-list"></div>
+</div>
+
+<!-- インポートモーダル -->
+<div class="modal-overlay" id="import-modal" style="display:none">
+  <div class="modal">
+    <div class="modal-title">📂 取引データを連携</div>
+    <div class="modal-desc">FXトラッカーで保存したCSVを読み込むと、あなたの取引履歴をもとにAIがアドバイスします。<br><span style="color:var(--gold)">⚠️ 現在のデータは上書きされます</span></div>
+    <input type="file" id="csv-file" accept=".csv" style="display:none" onchange="handleFile(event)">
+    <button class="btn-file" onclick="document.getElementById('csv-file').click()">📁 CSVファイルを選択</button>
+    <div style="font-size:11px;color:var(--tx3);text-align:center;margin-bottom:8px">または テキストを貼り付け</div>
+    <textarea class="modal-inp" id="csv-text" placeholder="id,date,pair,direction,entry,exit,lot,swap,days,tp,sl,memo&#10;10001,2026-05-01,AUD/JPY,long,..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="hideImport()">キャンセル</button>
+      <button class="btn-ok" onclick="importFromText()">読み込む</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var trades = [];
+var msgHistory = [];
+var isLoading = false;
+
+var SYSTEM = 'あなたはSBI証券でFXトレードをするユーザーの専属AIエージェントです。ユーザーは主にAUD/JPY（豪ドル円）とUSD/JPY（ドル円）を取引しています。\n\n役割：取引判断のサポート、チャートパターン解説、経済指標分析、過去取引データからのアドバイス、FX学習サポート。\n\n回答スタイル：日本語で簡潔に。具体的な数値や根拠を示す。リスクについても言及する。断定的な予測は避けシナリオで話す。絵文字を適度に使う。\n\n重要：投資は自己責任です。アドバイスはあくまで参考情報です。';
+
+var PATTERNS = [
+  {name:'ヘッド＆ショルダー',type:'反転↓',color:'#ff4d6a',desc:'上昇トレンドの終わりを示す。3つの山（中央が最高値）が特徴。ネックライン割れが売りシグナル。'},
+  {name:'ダブルトップ',type:'反転↓',color:'#ff4d6a',desc:'同じ高値を2回試して失敗。強い上昇トレンドの終わりのサイン。'},
+  {name:'ダブルボトム',type:'反転↑',color:'#00dfa2',desc:'同じ安値を2回試して反発。下落トレンドの底打ちサイン。'},
+  {name:'フラッグ',type:'継続↑↓',color:'#4d9eff',desc:'急上昇/急下落後の小休止パターン。元のトレンド方向へブレイクすることが多い。'},
+  {name:'トライアングル',type:'継続/転換',color:'#f0b429',desc:'高値と安値が収束するパターン。どちらかにブレイクした方向がトレンドになる。'},
+  {name:'ゴールデンクロス',type:'買いシグナル',color:'#00dfa2',desc:'短期移動平均が長期移動平均を上抜け。上昇トレンド入りのサイン。'},
+  {name:'デッドクロス',type:'売りシグナル',color:'#ff4d6a',desc:'短期移動平均が長期移動平均を下抜け。下降トレンド入りのサイン。'},
+  {name:'ピンバー',type:'反転サイン',color:'#9d7ff0',desc:'長いヒゲと小さい実体のローソク足。強い拒否反応を示し、反転の可能性が高い。'},
+];
+
+// パターン辞典を描画
+function renderPatterns() {
+  var html = '';
+  for (var i = 0; i < PATTERNS.length; i++) {
+    var p = PATTERNS[i];
+    var msg = p.name + 'パターンについて詳しく教えて。AUD/JPYやUSD/JPYでの実例や、エントリー・決済のタイミングも教えて。';
+    html += '<div class="card">'
+      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+      + '<div class="pattern-bar" style="height:36px;background:' + p.color + '"></div>'
+      + '<div><div style="font-size:14px;font-weight:600">' + p.name + '</div>'
+      + '<div style="font-size:11px;padding:1px 8px;border-radius:10px;background:' + p.color + '20;color:' + p.color + ';display:inline-block;margin-top:2px">' + p.type + '</div>'
+      + '</div></div>'
+      + '<div style="font-size:13px;color:var(--tx2);line-height:1.7">' + p.desc + '</div>'
+      + '<button class="deep-btn" onclick="deepDive(\'' + msg.replace(/'/g, "\\'") + '\')">🤖 AIに詳しく聞く</button>'
+      + '</div>';
+  }
+  document.getElementById('pattern-list').innerHTML = html;
+}
+
+function deepDive(msg) {
+  switchTab('chat', document.querySelectorAll('.tab')[0]);
+  sendQuick(msg);
+}
+
+// タブ切り替え
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  document.getElementById('chat-content').classList.remove('active');
+  document.getElementById('news-content').classList.remove('active');
+  document.getElementById('patterns-content').classList.remove('active');
+  if (tab === 'chat') document.getElementById('chat-content').classList.add('active');
+  if (tab === 'news') document.getElementById('news-content').classList.add('active');
+  if (tab === 'patterns') document.getElementById('patterns-content').classList.add('active');
+  if (tab === 'news' && document.getElementById('news-list').querySelector('.news-empty')) fetchNews();
+}
+
+// 時刻
+function nowTime() {
+  return new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+}
+
+// メッセージ追加
+function addMsg(role, text) {
+  var wrap = document.createElement('div');
+  wrap.className = 'msg-wrap ' + role;
+  var html = '';
+  if (role === 'assistant') html += '<div class="msg-avatar">🤖</div>';
+  html += '<div class="msg-bubble ' + role + '">' + escHtml(text) + '</div>';
+  html += '<div class="msg-time">' + nowTime() + '</div>';
+  wrap.innerHTML = html;
+  document.getElementById('msg-list').appendChild(wrap);
+  document.getElementById('bottom').scrollIntoView({behavior:'smooth'});
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// 初期メッセージ
+addMsg('assistant', 'こんにちは！あなた専属のFX AIエージェントです🤖\n\nAUD/JPY・USD/JPYの取引をサポートします。\n\n• 取引判断の相談\n• 経済指標・ニュース分析\n• チャートパターン解説\n• 過去データからのアドバイス\n\n何でも聞いてください！上のクイック質問も使えます👇');
+
+// 送信
+function send() {
+  var box = document.getElementById('input-box');
+  var text = box.value.trim();
+  if (!text || isLoading) return;
+  box.value = '';
+  box.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+  sendMsg(text);
+}
+
+function sendQuick(text) { sendMsg(text); }
+
+function sendMsg(text) {
+  if (isLoading) return;
+  addMsg('user', text);
+  msgHistory.push({role:'user', content:text});
+  isLoading = true;
+  document.getElementById('typing').classList.add('show');
+  document.getElementById('bottom').scrollIntoView({behavior:'smooth'});
+
+  var tradeCtx = '';
+  if (trades.length) {
+    var pnls = trades.map(calcPnl);
+    var tot = pnls.reduce(function(a,b){return a+b;},0);
+    var wr = Math.round(pnls.filter(function(p){return p>0;}).length/pnls.length*100);
+    var recent = trades.slice(-5).map(function(t){
+      return t.date+' '+t.pair+' '+(t.direction==='long'?'ロング':'ショート')+' '+t.entry+'→'+t.exit+' '+(calcPnl(t)>=0?'+':'')+calcPnl(t)+'円';
+    }).join('\n');
+    tradeCtx = '\n\n【ユーザーの取引データ】合計損益:'+tot.toLocaleString()+'円 勝率:'+wr+'% 回数:'+trades.length+'回\n直近5件:\n'+recent;
+  }
+
+  var history = msgHistory.slice(-10);
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1000,
+      system: SYSTEM + tradeCtx,
+      messages: history
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var reply = (d.content||[]).map(function(c){return c.text||'';}).join('') || 'エラーが発生しました';
+    document.getElementById('typing').classList.remove('show');
+    addMsg('assistant', reply);
+    msgHistory.push({role:'assistant', content:reply});
+    isLoading = false;
+  })
+  .catch(function(){
+    document.getElementById('typing').classList.remove('show');
+    addMsg('assistant', '⚠️ 通信エラーが発生しました。再度お試しください。');
+    isLoading = false;
+  });
+}
+
+// ニュース取得
+function fetchNews() {
+  var list = document.getElementById('news-list');
+  list.innerHTML = '';
+  for (var i=0;i<5;i++) {
+    list.innerHTML += '<div class="card"><div class="skel" style="height:14px;width:60%;margin-bottom:8px"></div><div class="skel" style="height:10px;width:90%;margin-bottom:5px"></div><div class="skel" style="height:10px;width:75%"></div></div>';
+  }
+  fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1500,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      messages:[{role:'user',content:'AUD/JPY（豪ドル円）とUSD/JPY（ドル円）に影響する最新ニュースと経済指標を5件調べて。各ニュースをJSON配列で返してください。形式：[{"title":"タイトル","summary":"2〜3文の要約","impact":"AUD/JPYまたはUSD/JPY","direction":"bullish/bearish/neutral"}]。JSONのみ返してください。'}]
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(d){
+    var text = (d.content||[]).map(function(c){return c.text||'';}).join('');
+    var clean = text.replace(/```json|```/g,'').trim();
+    var items = JSON.parse(clean);
+    if (!Array.isArray(items)) throw new Error();
+    list.innerHTML = '';
+    items.forEach(function(item){
+      var dirColor = item.direction==='bullish'?'#00dfa2':item.direction==='bearish'?'#ff4d6a':'#7a8394';
+      var dirLabel = item.direction==='bullish'?'↑ 強気':item.direction==='bearish'?'↓ 弱気':'→ 中立';
+      var dirClass = item.direction==='bullish'?'news-up':item.direction==='bearish'?'news-down':'news-neutral';
+      var deepMsg = 'このニュースについて詳しく分析して：「'+item.title+'」。AUD/JPYとUSD/JPYへの影響は？';
+      list.innerHTML += '<div class="card">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px">'
+        +'<div style="font-size:13px;font-weight:500;line-height:1.4;flex:1">'+escHtml(item.title)+'</div>'
+        +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;align-items:flex-end">'
+        +'<span class="news-badge news-neutral">'+escHtml(item.impact||'')+'</span>'
+        +'<span class="news-badge '+dirClass+'">'+dirLabel+'</span>'
+        +'</div></div>'
+        +'<div style="font-size:12px;color:var(--tx2);line-height:1.7">'+escHtml(item.summary||'')+'</div>'
+        +'<button class="deep-btn" onclick="deepNews(\''+escAttr(deepMsg)+'\')">🤖 このニュースを深掘り</button>'
+        +'</div>';
+    });
+  })
+  .catch(function(){
+    list.innerHTML = '<div class="card"><div style="color:var(--tx3);font-size:13px">取得に失敗しました。再度お試しください。</div></div>';
+  });
+}
+
+function deepNews(msg) {
+  switchTab('chat', document.querySelectorAll('.tab')[0]);
+  sendQuick(msg);
+}
+
+function escAttr(s) { return s.replace(/'/g,"&#39;").replace(/"/g,'&quot;'); }
+
+// CSV
+function calcPnl(t) {
+  var p = t.direction==='long' ? t.exit-t.entry : t.entry-t.exit;
+  return Math.round(p/0.01*t.lot*100) + (t.swap||0)*(t.days||1);
+}
+
+function showImport() { document.getElementById('import-modal').style.display='flex'; }
+function hideImport() { document.getElementById('import-modal').style.display='none'; document.getElementById('csv-text').value=''; }
+
+function handleFile(e) {
+  var file = e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev){ doImport(ev.target.result); };
+  reader.readAsText(file,'UTF-8');
+}
+
+function importFromText() {
+  var text = document.getElementById('csv-text').value.trim();
+  if (!text) return;
+  doImport(text);
+}
+
+function doImport(text) {
+  try {
+    var lines = text.trim().split('\n').filter(function(l){return l.trim();});
+    var dataLines = lines[0].startsWith('id,') ? lines.slice(1) : lines;
+    var parsed = dataLines.map(function(line){
+      var parts = line.split(',');
+      return {
+        id: Number(parts[0])||Date.now(),
+        date: parts[1]||'', pair: parts[2]||'AUD/JPY',
+        direction: parts[3]||'long',
+        entry: parseFloat(parts[4])||0, exit: parseFloat(parts[5])||0,
+        lot: parseFloat(parts[6])||1, swap: parseFloat(parts[7])||0,
+        days: parseInt(parts[8])||1,
+        memo: (parts.slice(11).join(',')||'').replace(/^"|"$/g,'')
+      };
+    }).filter(function(t){return t.entry&&t.exit;});
+    if (!parsed.length) { alert('読み込めるデータがありませんでした'); return; }
+    trades = parsed;
+    var badge = document.getElementById('data-badge');
+    badge.textContent = '📊 '+parsed.length+'件';
+    badge.style.display = 'block';
+    hideImport();
+    switchTab('chat', document.querySelectorAll('.tab')[0]);
+    addMsg('assistant', '✅ '+parsed.length+'件の取引データを読み込みました！\n\nこのデータをもとに、あなたの取引傾向に合わせたアドバイスができます。何か聞いてみてください！');
+  } catch(e) { alert('読み込みに失敗しました'); }
+}
+
+// 入力
+function autoResize(el) {
+  el.style.height='auto';
+  el.style.height=Math.min(el.scrollHeight,120)+'px';
+  document.getElementById('send-btn').disabled = !el.value.trim();
+}
+
+function handleKey(e) {
+  if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+}
+
+// 初期化
+renderPatterns();
+</script>
+</body>
+</html>
